@@ -1,0 +1,36 @@
+from flask import Flask, request, jsonify
+import dialogflow
+import os
+
+app = Flask(__name__)
+
+# Set up Dialogflow credentials
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "path/to/your/dialogflow_credentials.json"
+DIALOGFLOW_PROJECT_ID = "your-dialogflow-project-id"
+
+# Create a Dialogflow session client
+session_client = dialogflow.SessionsClient()
+
+# Define a route for the home page
+@app.route("/")
+def index():
+    return "Welcome to the Conversational AI Web App!"
+
+# Define a route for handling user messages
+@app.route("/send_message", methods=["POST"])
+def send_message():
+    message = request.form["message"]
+
+    # Create a Dialogflow session
+    session = session_client.session_path(DIALOGFLOW_PROJECT_ID, "unique_session_id")
+
+    # Send user message to Dialogflow agent
+    text_input = dialogflow.types.TextInput(text=message, language_code="en")
+    query_input = dialogflow.types.QueryInput(text=text_input)
+    response = session_client.detect_intent(session=session, query_input=query_input)
+
+    # Retrieve and return Dialogflow agent's response
+    return jsonify({"message": response.query_result.fulfillment_text})
+
+if __name__ == "__main__":
+    app.run(debug=True)
